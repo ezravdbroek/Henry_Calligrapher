@@ -9,7 +9,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "preview:pages": "astro build && wrangler pages dev dist --port 8788"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -19,5 +20,9 @@
   },
   "allowScripts": {
     "esbuild": true
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260908.1",
+    "wrangler": "^4.130.0"
   }
 }

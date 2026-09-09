@@ -1,0 +1,14 @@
+# Copy to .dev.vars for `npm run preview:pages` (never commit .dev.vars).
+# In production: Cloudflare Pages → Settings → Variables and Secrets (type: Secret).
+# Resend → API Keys. This key may only send from henrycalligraphy.com.
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Optional overrides
+# RESEND_FROM=Henry Calligraphy <website@henrycalligraphy.com>
+# RESEND_TO=info@henrycalligraphy.com
+# RESEND_BCC=info@brandways.nl
+
+# The same key also works as an SMTP password, should mail ever need to go out via SMTP
+# (for example from a mail client or another tool) instead of the website:
+#   host: smtp.resend.com   port: 465 (SSL) or 587 (STARTTLS)
+#   username: resend        password: <the RESEND_API_KEY above>

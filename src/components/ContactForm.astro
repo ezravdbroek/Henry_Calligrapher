@@ -6,7 +6,13 @@ const field =
 const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-muted-foreground';
 ---
 
-<form id="contact-form" class="grid gap-5 sm:grid-cols-2">
+<form id="contact-form" class="grid gap-5 sm:grid-cols-2" method="post" action="/api/contact" novalidate>
+  {/* Honeypot: hidden from people, filled in by bots. The endpoint silently drops those. */}
+  <div class="absolute -left-[9999px] h-px w-px overflow-hidden" aria-hidden="true">
+    <label for="f-website">Website</label>
+    <input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+
   <div class="sm:col-span-2">
     <label class={label} for="f-subject">What is it about?</label>
     <select id="f-subject" name="subject" class={`mt-2 ${field}`}>
@@ -57,13 +63,19 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
 
   <div class="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-center">
     <button
+      id="contact-submit"
       type="submit"
-      class="inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 font-sans text-[0.75rem] uppercase tracking-[0.18em] text-background transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      class="inline-flex disabled:cursor-wait disabled:opacity-60 items-center justify-center rounded-full bg-foreground px-7 py-3.5 font-sans text-[0.75rem] uppercase tracking-[0.18em] text-background transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       Send inquiry
     </button>
-    <p class="font-sans text-sm leading-relaxed text-muted-foreground">
-      Opens your email app with the message ready to send.
+    <p
+      id="contact-status"
+      class="font-sans text-sm leading-relaxed text-muted-foreground"
+      role="status"
+      aria-live="polite"
+    >
+      You will receive a reply within a few working days.
     </p>
   </div>
 </form>
@@ -80,12 +92,19 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
     }
   }
 
-  form?.addEventListener('submit', (event) => {
-    event.preventDefault();
+  const status = document.getElementById('contact-status');
+  const button = document.getElementById('contact-submit');
 
-    const data = new FormData(form);
+  const say = (text, tone) => {
+    if (!status) return;
+    status.textContent = text;
+    status.classList.toggle('text-red-700', tone === 'error');
+    status.classList.toggle('text-muted-foreground', tone !== 'error');
+  };
+
+  /* Last resort when the API is unreachable: hand the message to the visitor's mail app. */
+  const openMailClient = (data) => {
     const get = (key) => String(data.get(key) ?? '').trim();
-
     const chosen = subject?.selectedOptions[0]?.textContent?.trim() ?? '';
     const lines = [
       'Hello Isha,',
@@ -102,13 +121,52 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
       get('name'),
       get('email'),
     ];
-
     const href =
       'mailto:info@henrycalligraphy.com' +
       `?subject=${encodeURIComponent(`Commission inquiry — ${chosen || 'general'}`)}` +
       `&body=${encodeURIComponent(lines.join('\n'))}`;
-
     // mailto length limits vary by client; fall back to the plain template if it gets long.
     window.location.href = href.length > 1800 ? fallback : href;
+  };
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    if (!form.reportValidity()) return;
+
+    const data = new FormData(form);
+    // Send the readable label ("A service") rather than the option value ("service").
+    data.set('subject', subject?.selectedOptions[0]?.textContent?.trim() ?? '');
+
+    button?.setAttribute('disabled', '');
+    say('Sending your inquiry…');
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: data,
+        headers: { accept: 'application/json' },
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (response.ok && result.ok) {
+        form.reset();
+        say('Thank you — your inquiry has been sent. You will hear from Isha within a few working days.');
+        return;
+      }
+
+      if (response.status === 400) {
+        say(result.error ?? 'Please check the highlighted fields and try again.', 'error');
+        return;
+      }
+
+      say('Sending did not work just now — opening your email app instead.', 'error');
+      openMailClient(data);
+    } catch {
+      say('Sending did not work just now — opening your email app instead.', 'error');
+      openMailClient(data);
+    } finally {
+      button?.removeAttribute('disabled');
+    }
   });
 </script>
