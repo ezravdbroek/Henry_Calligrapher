@@ -19,7 +19,7 @@ const moved = [
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://henry-calligrapher.pages.dev',
+  site: 'https://henrycalligraphy.com',
 
   vite: {
     plugins: [tailwindcss()]

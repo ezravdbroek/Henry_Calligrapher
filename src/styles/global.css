@@ -233,3 +233,70 @@ body {
 [data-site] .faq-chevron {
   transition: transform 0.25s ease;
 }
+
+/* Trusted by, phone marquee ------------------------------------------------
+ *
+ * Eight logos in a two-column grid made a tall block to scroll past on a phone.
+ * Instead the row drifts sideways, so everything passes through the height of a
+ * single line. The track holds the list twice and travels exactly half its own
+ * width, which puts the second copy where the first began — no visible seam.
+ *
+ * Movement runs left to right, so the animation counts down from -50% to 0.
+ * -------------------------------------------------------------------------- */
+
+[data-site] .brandmarquee {
+  overflow: hidden;
+  /* Fade both edges instead of cutting a logo off mid-letter. */
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 3rem,
+    #000 calc(100% - 3rem),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 3rem,
+    #000 calc(100% - 3rem),
+    transparent
+  );
+}
+
+[data-site] .brandmarquee-track {
+  display: flex;
+  width: max-content;
+  animation: brandmarquee 46s linear infinite;
+}
+
+[data-site] .brandmarquee-row {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  /* The gap repeats between the two copies as well, so the rhythm never breaks. */
+  gap: 3.25rem;
+  padding-right: 3.25rem;
+}
+
+@keyframes brandmarquee {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No drift: hand the row back as something the visitor scrolls themselves,
+     otherwise the logos past the edge would be unreachable. */
+  [data-site] .brandmarquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  [data-site] .brandmarquee-track {
+    animation: none;
+  }
+}

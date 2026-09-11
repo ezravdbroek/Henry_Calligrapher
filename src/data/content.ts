@@ -204,15 +204,38 @@ export const gallery = [
  * -------------------------------------------------------------------------- */
 
 /**
- * Brands the studio has worked with. The rest follow now that the site is live and Isha can
- * point each brand at the page before asking permission.
- * `logo` is a file under `src/assets/images/trusted/`; TEFAF is drawn inline as an SVG so it
- * stays crisp and inherits the ink colour.
+ * Brands the studio has worked with.
+ *
+ * `logo` is a file under `src/assets/images/trusted/`; TEFAF has no file because it is drawn
+ * inline as an SVG in the component. Every mark has a different proportion — a tall House of
+ * Flux monogram next to a very wide By Maureen wordmark — so each carries its own height
+ * instead of one shared size, which would leave the monogram looking tiny.
+ *
+ * `featured` marks the two clients Isha wants to stand out: they sit first, are set larger and
+ * skip the muted treatment the others get.
  */
 export const trustedBy = [
-  // TEFAF ships a clean SVG wordmark; it is inlined in the component so it stays vector-sharp
-  // and picks up the ink colour. The rest are PNGs under `src/assets/images/trusted/`.
-  { name: 'TEFAF', href: 'https://www.tefaf.com/', height: 'h-4 sm:h-5' },
+  {
+    name: 'Carrera y Carrera',
+    href: 'https://carreraycarrera.com/',
+    logo: 'trusted/carrera-y-carrera.png',
+    height: 'h-6 sm:h-8',
+    featured: true,
+  },
+  {
+    name: 'Mandarin Oriental, Conservatorium Amsterdam',
+    href: 'https://www.mandarinoriental.com/en/amsterdam/conservatorium',
+    logo: 'trusted/mandarin-oriental.png',
+    // A stacked lockup: the fan sits above two lines of type, so it needs more height than the
+    // single-line wordmarks before the bottom line becomes readable.
+    height: 'h-14 sm:h-16',
+    featured: true,
+  },
+  {
+    name: 'TEFAF',
+    href: 'https://www.tefaf.com/',
+    height: 'h-4 sm:h-5',
+  },
   {
     name: 'House of Flux',
     href: 'https://houseofflux.com/',
@@ -220,10 +243,21 @@ export const trustedBy = [
     height: 'h-12 sm:h-14',
   },
   {
+    name: 'By Maureen',
+    href: 'https://www.bymaureen.nl',
+    logo: 'trusted/by-maureen.png',
+    height: 'h-3.5 sm:h-4',
+  },
+  {
     name: 'Dévents Event Agency',
     href: 'https://www.devents-agency.com',
     logo: 'trusted/devents.png',
     height: 'h-9 sm:h-10',
+  },
+  {
+    name: 'Lifestyle Business Club',
+    logo: 'trusted/lifestyle-business-club.png',
+    height: 'h-11 sm:h-12',
   },
   {
     name: 'The Perfect',

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://henry-calligrapher.pages.dev/sitemap-index.xml
+Sitemap: https://henrycalligraphy.com/sitemap-index.xml

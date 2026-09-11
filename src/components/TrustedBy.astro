@@ -5,11 +5,21 @@ import { trustedBy } from '../data/content';
 import { img } from '../lib/images';
 
 /**
- * Brands the studio has worked with. Replaces the four text-only facts that stood here before.
+ * Brands the studio has worked with.
  *
- * The four marks have very different proportions — a wide TEFAF wordmark drawn inline as an
- * SVG, a tall House of Flux monogram, and two stacked wordmarks — so each entry carries its own
- * height class rather than one shared size, which would leave the monogram looking tiny.
+ * The marks have very different proportions — a tall House of Flux monogram next to a very wide
+ * By Maureen wordmark — so each entry brings its own height class rather than one shared size,
+ * which would leave the monogram looking tiny.
+ *
+ * `featured` brands keep their full colour instead of the muted treatment the rest get, which is
+ * what makes them read first. A brand without an `href` renders as plain markup rather than a
+ * link that goes nowhere.
+ *
+ * Two layouts, one dataset. From `sm` up the logos sit in a static grid. Below that, eight logos
+ * in a two-column grid turned into a tall block you had to scroll past, so the phone gets a
+ * marquee instead: one line that drifts sideways, showing everything in the height of a single
+ * row. The list is rendered twice there so the loop has no seam; the copy is hidden from screen
+ * readers, which read the static list instead.
  */
 interface Props {
   class?: string;
@@ -21,6 +31,12 @@ const brands = trustedBy.map((brand) => ({
   ...brand,
   image: brand.logo ? img(brand.logo) : undefined,
 }));
+
+const wrap =
+  'flex items-center justify-center transition-opacity duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-secondary';
+
+const tefafPath =
+  'M0 0h21.465v4.972h-8.038V29H8.042V4.972H0ZM45.679 0v4.972H33.143v6.09H43.21v4.971H33.143v8H46.11V29H27.757V0ZM72.281 0v4.972H59.314V11.6h10.44v4.971h-10.44V29h-5.386V0ZM91.098 22.164h-9.2L79.788 29h-5.8l9.823-29h5.386l9.819 29h-5.8Zm-7.664-4.971h6.132L86.5 7.126ZM123.607 0v4.972h-12.971V11.6h10.445v4.971h-10.445V29h-5.382V0Z';
 ---
 
 <Section tone="muted" compact class={className}>
@@ -31,40 +47,108 @@ const brands = trustedBy.map((brand) => ({
     Trusted by
   </p>
 
-  <ul class="mt-9 grid grid-cols-2 items-center justify-items-center gap-x-8 gap-y-10 sm:grid-cols-4">
+  {/* Phone: one drifting line. The mask softens both edges so logos fade rather than clip. */}
+  <div class="brandmarquee mt-9 sm:hidden" data-reveal>
+    <div class="brandmarquee-track">
+      {
+        [0, 1].map((copy) => (
+          <ul class="brandmarquee-row" aria-hidden={copy === 1 ? 'true' : undefined}>
+            {brands.map((brand) => {
+              const Tag = brand.href ? 'a' : 'span';
+              /* Both copies stay clickable — a logo that stops working halfway through the loop
+                 would be worse than no link. The duplicate is out of the tab order so keyboard
+                 users do not meet every brand twice. */
+              const attrs = brand.href
+                ? {
+                    href: brand.href,
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    ...(copy === 0
+                      ? { 'aria-label': `${brand.name} — opens in a new tab` }
+                      : { tabindex: '-1' }),
+                  }
+                : {};
+
+              return (
+                <li class="shrink-0">
+                  <Tag
+                    {...attrs}
+                    class:list={[wrap, brand.featured ? 'opacity-100' : 'opacity-65']}
+                  >
+                    {brand.image ? (
+                      <Image
+                        src={brand.image}
+                        alt={copy === 1 ? '' : brand.name}
+                        widths={[240, 480]}
+                        sizes="200px"
+                        class={`${brand.height} w-auto max-w-none`}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <svg
+                        viewBox="0 0 124 29"
+                        fill="currentColor"
+                        role="img"
+                        aria-label={brand.name}
+                        class={`${brand.height} w-auto max-w-none`}
+                      >
+                        <path d={tefafPath} />
+                      </svg>
+                    )}
+                  </Tag>
+                </li>
+              );
+            })}
+          </ul>
+        ))
+      }
+    </div>
+  </div>
+
+  {/* Tablet and up: the static grid, unchanged. */}
+  <ul class="mt-9 hidden grid-cols-2 items-center justify-items-center gap-x-8 gap-y-10 sm:grid sm:grid-cols-4">
     {
-      brands.map((brand, i) => (
-        <li data-reveal data-reveal-delay={i * 70}>
-          <a
-            href={brand.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex items-center justify-center opacity-65 transition-opacity duration-300 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-4 focus-visible:ring-offset-secondary"
-            aria-label={`${brand.name} — opens in a new tab`}
-          >
-            {brand.image ? (
-              <Image
-                src={brand.image}
-                alt={brand.name}
-                widths={[240, 480]}
-                sizes="140px"
-                class={`${brand.height} w-auto`}
-                loading="lazy"
-              />
-            ) : (
-              <svg
-                viewBox="0 0 124 29"
-                fill="currentColor"
-                role="img"
-                aria-label={brand.name}
-                class={`${brand.height} w-auto`}
-              >
-                <path d="M0 0h21.465v4.972h-8.038V29H8.042V4.972H0ZM45.679 0v4.972H33.143v6.09H43.21v4.971H33.143v8H46.11V29H27.757V0ZM72.281 0v4.972H59.314V11.6h10.44v4.971h-10.44V29h-5.386V0ZM91.098 22.164h-9.2L79.788 29h-5.8l9.823-29h5.386l9.819 29h-5.8Zm-7.664-4.971h6.132L86.5 7.126ZM123.607 0v4.972h-12.971V11.6h10.445v4.971h-10.445V29h-5.382V0Z" />
-              </svg>
-            )}
-          </a>
-        </li>
-      ))
+      brands.map((brand, i) => {
+        const Tag = brand.href ? 'a' : 'span';
+        const linkAttrs = brand.href
+          ? {
+              href: brand.href,
+              target: '_blank',
+              rel: 'noopener noreferrer',
+              'aria-label': `${brand.name} — opens in a new tab`,
+            }
+          : {};
+
+        return (
+          <li data-reveal data-reveal-delay={i * 70}>
+            <Tag
+              {...linkAttrs}
+              class:list={[wrap, brand.featured ? 'opacity-100' : 'opacity-65 hover:opacity-100']}
+            >
+              {brand.image ? (
+                <Image
+                  src={brand.image}
+                  alt={brand.name}
+                  widths={[240, 480]}
+                  sizes="200px"
+                  class={`${brand.height} w-auto`}
+                  loading="lazy"
+                />
+              ) : (
+                <svg
+                  viewBox="0 0 124 29"
+                  fill="currentColor"
+                  role="img"
+                  aria-label={brand.name}
+                  class={`${brand.height} w-auto`}
+                >
+                  <path d={tefafPath} />
+                </svg>
+              )}
+            </Tag>
+          </li>
+        );
+      })
     }
   </ul>
 </Section>
