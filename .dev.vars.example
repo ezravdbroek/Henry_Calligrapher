@@ -1,7 +1,16 @@
 # Copy to .dev.vars for `npm run preview:pages` (never commit .dev.vars).
-# In production: Cloudflare Pages → Settings → Variables and Secrets (type: Secret).
-# Resend → API Keys. This key may only send from henrycalligraphy.com.
-RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+# In production: already set as a Pages secret on the henry-calligrapher project.
+# Resend → API Keys; a key may only send from henrycalligraphy.com. Keys are shown once,
+# so paste your own copy here to test locally.
+RESEND_API_KEY=
+
+# Cloudflare Turnstile secret, the counterpart of the site key in .env. Production already
+# has this as a Pages secret; locally pair it with the test site key. Leave it out and the
+# spam check is skipped. Cloudflare's test secrets:
+#   always passes  1x0000000000000000000000000000000AA
+#   always fails   2x0000000000000000000000000000000AA
+# The real one: wrangler turnstile widget get 0x4AAAAAAE1xQnjAqshy6ZRb
+TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 
 # Optional overrides
 # RESEND_FROM=Henry Calligraphy <website@henrycalligraphy.com>

@@ -11,6 +11,9 @@
  *   RESEND_FROM    — sender on the verified domain (optional)
  *   RESEND_TO      — recipient of the internal notification (optional)
  *   RESEND_BCC     — bcc on the internal notification, empty string disables (optional)
+ *   TURNSTILE_SECRET_KEY — Cloudflare Turnstile secret (Secret); without it the spam
+ *                          check is skipped, so set it together with the public site key
+ *                          (PUBLIC_TURNSTILE_SITE_KEY, read at build time by the form)
  */
 
 interface Env {
@@ -18,6 +21,7 @@ interface Env {
   RESEND_FROM?: string;
   RESEND_TO?: string;
   RESEND_BCC?: string;
+  TURNSTILE_SECRET_KEY?: string;
 }
 
 const DEFAULT_FROM = 'Henry Calligraphy <website@henrycalligraphy.com>';
@@ -69,7 +73,9 @@ const C_ON_DARK_MUTED = 'rgba(249,246,240,0.62)';
 const FONT_SANS = "'Karla', Arial, 'Helvetica Neue', Helvetica, sans-serif";
 const FONT_SERIF = "'Cormorant Garamond', Georgia, 'Times New Roman', serif";
 
-const MAX = { short: 200, message: 5000 } as const;
+const MAX = { short: 200, message: 5000, token: 4096 } as const;
+
+const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
 const escape = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -347,6 +353,26 @@ function confirmationEmail(d: Inquiry) {
   return { subject: `Your inquiry to ${STUDIO.name} has been received`, html, text };
 }
 
+/* ---------- Cloudflare Turnstile ---------- */
+
+/**
+ * Checks the visitor's Turnstile token with Cloudflare. Tokens are single use and valid for
+ * five minutes, so a reused or stale one fails here and the visitor gets a fresh widget.
+ */
+async function verifyTurnstile(secret: string, token: string, ip: string | null) {
+  const body = new URLSearchParams({ secret, response: token });
+  if (ip) body.set('remoteip', ip);
+
+  const res = await fetch(TURNSTILE_VERIFY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!res.ok) throw new Error(`Turnstile ${res.status}: ${await res.text()}`);
+
+  return (await res.json()) as { success: boolean; 'error-codes'?: string[] };
+}
+
 /* ---------- Resend ---------- */
 
 type Mail = {
@@ -403,6 +429,8 @@ async function readInquiry(request: Request) {
     } satisfies Inquiry,
     // Honeypot — hidden from people, filled in by bots
     honeypot: clean(data.get('website'), MAX.short),
+    // Added to the form by the Turnstile widget
+    turnstileToken: String(data.get('cf-turnstile-response') ?? '').trim().slice(0, MAX.token),
   };
 }
 
@@ -415,8 +443,9 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   let inquiry: Inquiry;
   let honeypot: string;
+  let turnstileToken: string;
   try {
-    ({ inquiry, honeypot } = await readInquiry(request));
+    ({ inquiry, honeypot, turnstileToken } = await readInquiry(request));
   } catch {
     return json({ ok: false, error: 'Invalid request.' }, 400);
   }
@@ -425,6 +454,30 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
 
   if (!inquiry.name || !inquiry.message || !isEmail(inquiry.email)) {
     return json({ ok: false, error: 'Please fill in your name, a valid email and a message.' }, 400);
+  }
+
+  // Spam check. Skipped when no secret is configured, so the form keeps working while
+  // Turnstile is still being set up.
+  if (env.TURNSTILE_SECRET_KEY) {
+    if (!turnstileToken) {
+      return json({ ok: false, error: 'The spam check did not complete. Please try again.' }, 400);
+    }
+    try {
+      const result = await verifyTurnstile(
+        env.TURNSTILE_SECRET_KEY,
+        turnstileToken,
+        request.headers.get('CF-Connecting-IP'),
+      );
+      if (!result.success) {
+        console.warn('Turnstile rejected a submission', result['error-codes']);
+        return json({ ok: false, error: 'The spam check failed. Please try again.' }, 400);
+      }
+    } catch (err) {
+      // Cloudflare itself is unreachable — let the inquiry through rather than lose it.
+      console.error('Turnstile verification error', err);
+    }
+  } else {
+    console.warn('TURNSTILE_SECRET_KEY is not set — the spam check is disabled');
   }
 
   const apiKey = env.RESEND_API_KEY;

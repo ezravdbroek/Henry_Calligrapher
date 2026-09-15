@@ -1,5 +1,5 @@
 ---
-import { contactSubjects, mailto } from '../data/content';
+import { contactSubjects, mailto, turnstileSiteKey } from '../data/content';
 
 const field =
   'w-full rounded-xl border border-foreground/20 bg-background px-4 py-3 font-sans text-body text-foreground transition-colors placeholder:text-muted-foreground/70 focus:border-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring/30';
@@ -61,6 +61,25 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
     <textarea id="f-message" name="message" rows="5" required class={`mt-2 ${field}`}></textarea>
   </div>
 
+  {
+    /* Cloudflare Turnstile. `interaction-only` keeps it invisible unless a visitor actually
+       has to prove they are human, so the form stays clean. Turnstile writes its token into
+       a hidden `cf-turnstile-response` input inside this form. */
+    turnstileSiteKey && (
+      <div class="sm:col-span-2 empty:hidden">
+        <div
+          id="contact-turnstile"
+          class="cf-turnstile"
+          data-sitekey={turnstileSiteKey}
+          data-appearance="interaction-only"
+          data-theme="light"
+          data-language="en"
+          data-action="contact"
+        />
+      </div>
+    )
+  }
+
   <div class="flex flex-col gap-4 sm:col-span-2 sm:flex-row sm:items-center">
     <button
       id="contact-submit"
@@ -80,7 +99,13 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
   </div>
 </form>
 
-<script define:vars={{ fallback: mailto.commission }}>
+{
+  turnstileSiteKey && (
+    <script is:inline async defer src="https://challenges.cloudflare.com/turnstile/v0/api.js" />
+  )
+}
+
+<script define:vars={{ fallback: mailto.commission, turnstileEnabled: Boolean(turnstileSiteKey) }}>
   const form = document.getElementById('contact-form');
   const subject = document.getElementById('f-subject');
 
@@ -101,6 +126,21 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
     status.classList.toggle('text-red-700', tone === 'error');
     status.classList.toggle('text-muted-foreground', tone !== 'error');
   };
+
+  /* Turnstile hands its token to a hidden input that it adds inside the form. Most visitors
+     get one within a second without seeing anything; give it a moment before giving up. */
+  const turnstileToken = async () => {
+    if (!turnstileEnabled) return '';
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const value = form?.querySelector('[name="cf-turnstile-response"]')?.value ?? '';
+      if (value) return value;
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    return '';
+  };
+
+  /* Tokens are single use, so hand the visitor a fresh one after every attempt. */
+  const resetTurnstile = () => window.turnstile?.reset('#contact-turnstile');
 
   /* Last resort when the API is unreachable: hand the message to the visitor's mail app. */
   const openMailClient = (data) => {
@@ -141,6 +181,18 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
     button?.setAttribute('disabled', '');
     say('Sending your inquiry…');
 
+    if (turnstileEnabled) {
+      // The snapshot above was taken before the token existed, so set it explicitly.
+      const token = await turnstileToken();
+      if (!token) {
+        say('The spam check has not finished yet. Please try again in a moment.', 'error');
+        resetTurnstile();
+        button?.removeAttribute('disabled');
+        return;
+      }
+      data.set('cf-turnstile-response', token);
+    }
+
     try {
       const response = await fetch(form.action, {
         method: 'POST',
@@ -148,6 +200,8 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
         headers: { accept: 'application/json' },
       });
       const result = await response.json().catch(() => ({}));
+
+      resetTurnstile();
 
       if (response.ok && result.ok) {
         form.reset();
@@ -163,6 +217,7 @@ const label = 'block font-sans text-eyebrow uppercase tracking-[0.2em] text-mute
       say('Sending did not work just now — opening your email app instead.', 'error');
       openMailClient(data);
     } catch {
+      resetTurnstile();
       say('Sending did not work just now — opening your email app instead.', 'error');
       openMailClient(data);
     } finally {

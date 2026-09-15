@@ -7,6 +7,18 @@
  */
 
 export const email = 'info@henrycalligraphy.com';
+
+/**
+ * Cloudflare Turnstile — the spam check on the contact form. This key is public by design
+ * and ends up in the page source; its secret half lives in Cloudflare as the Pages secret
+ * `TURNSTILE_SECRET_KEY` (retrieve it with `wrangler turnstile widget get <sitekey>`).
+ *
+ * The widget is bound to henrycalligraphy.com, www.henrycalligraphy.com and
+ * henry-calligrapher.pages.dev, so local runs use Cloudflare's test key from `.env`
+ * instead. Setting PUBLIC_TURNSTILE_SITE_KEY to an empty string builds without the check.
+ */
+export const turnstileSiteKey =
+  import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '0x4AAAAAAE1xQnjAqshy6ZRb';
 export const instagramUrl = 'https://www.instagram.com/henrycalligraphy/';
 export const tagline = 'There’s a distinctive warmth, that only handwritten notes seem to deliver.';
 
