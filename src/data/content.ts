@@ -232,6 +232,14 @@ export const trustedBy = [
     featured: true,
   },
   {
+    name: 'House of Pertijs',
+    href: 'https://www.houseofpertijs.com/',
+    logo: 'trusted/house-of-pertijs.png',
+    // Two stacked lines of type, so it needs roughly double the height of a single-line
+    // wordmark before the smaller top line holds up.
+    height: 'h-10 sm:h-11',
+  },
+  {
     name: 'TEFAF',
     href: 'https://www.tefaf.com/',
     height: 'h-4 sm:h-5',
