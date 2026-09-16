@@ -19,8 +19,8 @@ import { img } from '../lib/images';
  * broke into a third row as soon as a ninth logo arrived, and a ragged last row of one is the
  * thing that makes a logo wall look unfinished. The marquee takes any number of marks in the
  * height of one row and keeps its rhythm. The list is rendered twice so the loop has no seam;
- * the copy is hidden from screen readers, which read the first list only. The drift pauses on
- * hover and on focus, so nothing has to be clicked while it moves.
+ * the copy is hidden from screen readers, which read the first list only. The drift runs without
+ * stopping; only keyboard focus holds it, so a focused link cannot wander off screen.
  */
 interface Props {
   class?: string;

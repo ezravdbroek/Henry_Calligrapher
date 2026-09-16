@@ -313,14 +313,9 @@ body {
   }
 }
 
-/* Hold still while someone is reading or aiming at a logo. Pointer devices only:
-   on a touch screen `:hover` sticks after a tap and would freeze the row. */
-@media (hover: hover) and (pointer: fine) {
-  [data-site] .brandmarquee:hover .brandmarquee-track {
-    animation-play-state: paused;
-  }
-}
-
+/* Hovering does not stop the row — the drift is meant to be continuous. Focus is
+   the exception: a link that wanders off screen while it holds the focus ring is
+   unreachable, so keyboard use holds it still. */
 [data-site] .brandmarquee:focus-within .brandmarquee-track {
   animation-play-state: paused;
 }
