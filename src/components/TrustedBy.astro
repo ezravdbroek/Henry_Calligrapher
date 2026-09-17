@@ -15,11 +15,12 @@ import { img } from '../lib/images';
  * what makes them read first. A brand without an `href` renders as plain markup rather than a
  * link that goes nowhere.
  *
- * Two layouts, one dataset. From `sm` up the logos sit in a static grid. Below that, eight logos
- * in a two-column grid turned into a tall block you had to scroll past, so the phone gets a
- * marquee instead: one line that drifts sideways, showing everything in the height of a single
- * row. The list is rendered twice there so the loop has no seam; the copy is hidden from screen
- * readers, which read the static list instead.
+ * One layout at every width: a single line that drifts sideways. The static grid this replaced
+ * broke into a third row as soon as a ninth logo arrived, and a ragged last row of one is the
+ * thing that makes a logo wall look unfinished. The marquee takes any number of marks in the
+ * height of one row and keeps its rhythm. The list is rendered twice so the loop has no seam;
+ * the copy is hidden from screen readers, which read the first list only. The drift runs without
+ * stopping; only keyboard focus holds it, so a focused link cannot wander off screen.
  */
 interface Props {
   class?: string;
@@ -47,8 +48,8 @@ const tefafPath =
     Trusted by
   </p>
 
-  {/* Phone: one drifting line. The mask softens both edges so logos fade rather than clip. */}
-  <div class="brandmarquee mt-9 sm:hidden" data-reveal>
+  {/* The mask softens both edges so logos fade in and out rather than clip. */}
+  <div class="brandmarquee mt-9 sm:mt-11" data-reveal>
     <div class="brandmarquee-track">
       {
         [0, 1].map((copy) => (
@@ -73,14 +74,17 @@ const tefafPath =
                 <li class="shrink-0">
                   <Tag
                     {...attrs}
-                    class:list={[wrap, brand.featured ? 'opacity-100' : 'opacity-65']}
+                    class:list={[
+                      wrap,
+                      brand.featured ? 'opacity-100' : 'opacity-65 hover:opacity-100',
+                    ]}
                   >
                     {brand.image ? (
                       <Image
                         src={brand.image}
                         alt={copy === 1 ? '' : brand.name}
                         widths={[240, 480]}
-                        sizes="200px"
+                        sizes="220px"
                         class={`${brand.height} w-auto max-w-none`}
                         loading="lazy"
                       />
@@ -104,51 +108,4 @@ const tefafPath =
       }
     </div>
   </div>
-
-  {/* Tablet and up: the static grid, unchanged. */}
-  <ul class="mt-9 hidden grid-cols-2 items-center justify-items-center gap-x-8 gap-y-10 sm:grid sm:grid-cols-4">
-    {
-      brands.map((brand, i) => {
-        const Tag = brand.href ? 'a' : 'span';
-        const linkAttrs = brand.href
-          ? {
-              href: brand.href,
-              target: '_blank',
-              rel: 'noopener noreferrer',
-              'aria-label': `${brand.name} — opens in a new tab`,
-            }
-          : {};
-
-        return (
-          <li data-reveal data-reveal-delay={i * 70}>
-            <Tag
-              {...linkAttrs}
-              class:list={[wrap, brand.featured ? 'opacity-100' : 'opacity-65 hover:opacity-100']}
-            >
-              {brand.image ? (
-                <Image
-                  src={brand.image}
-                  alt={brand.name}
-                  widths={[240, 480]}
-                  sizes="200px"
-                  class={`${brand.height} w-auto`}
-                  loading="lazy"
-                />
-              ) : (
-                <svg
-                  viewBox="0 0 124 29"
-                  fill="currentColor"
-                  role="img"
-                  aria-label={brand.name}
-                  class={`${brand.height} w-auto`}
-                >
-                  <path d={tefafPath} />
-                </svg>
-              )}
-            </Tag>
-          </li>
-        );
-      })
-    }
-  </ul>
 </Section>

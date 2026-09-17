@@ -234,31 +234,40 @@ body {
   transition: transform 0.25s ease;
 }
 
-/* Trusted by, phone marquee ------------------------------------------------
+/* Trusted by, the logo marquee --------------------------------------------
  *
- * Eight logos in a two-column grid made a tall block to scroll past on a phone.
- * Instead the row drifts sideways, so everything passes through the height of a
- * single line. The track holds the list twice and travels exactly half its own
- * width, which puts the second copy where the first began — no visible seam.
+ * A static grid of these marks broke into a ragged last row the moment the
+ * count changed, and on a phone it was a tall block to scroll past. Instead the
+ * row drifts sideways at every width, so any number of logos passes through the
+ * height of a single line. The track holds the list twice and travels exactly
+ * half its own width, which puts the second copy where the first began — no
+ * visible seam.
  *
  * Movement runs left to right, so the animation counts down from -50% to 0.
+ *
+ * `--brandmarquee-duration` grows with the gap and the logo sizes so the drift
+ * keeps the same speed on the page — roughly 28px a second — rather than
+ * racing on a wide screen where the track is nearly twice as long.
  * -------------------------------------------------------------------------- */
 
 [data-site] .brandmarquee {
+  --brandmarquee-gap: 3.25rem;
+  --brandmarquee-fade: 3rem;
+  --brandmarquee-duration: 52s;
   overflow: hidden;
   /* Fade both edges instead of cutting a logo off mid-letter. */
   -webkit-mask-image: linear-gradient(
     to right,
     transparent,
-    #000 3rem,
-    #000 calc(100% - 3rem),
+    #000 var(--brandmarquee-fade),
+    #000 calc(100% - var(--brandmarquee-fade)),
     transparent
   );
   mask-image: linear-gradient(
     to right,
     transparent,
-    #000 3rem,
-    #000 calc(100% - 3rem),
+    #000 var(--brandmarquee-fade),
+    #000 calc(100% - var(--brandmarquee-fade)),
     transparent
   );
 }
@@ -266,7 +275,7 @@ body {
 [data-site] .brandmarquee-track {
   display: flex;
   width: max-content;
-  animation: brandmarquee 46s linear infinite;
+  animation: brandmarquee var(--brandmarquee-duration) linear infinite;
 }
 
 [data-site] .brandmarquee-row {
@@ -274,8 +283,25 @@ body {
   flex-shrink: 0;
   align-items: center;
   /* The gap repeats between the two copies as well, so the rhythm never breaks. */
-  gap: 3.25rem;
-  padding-right: 3.25rem;
+  gap: var(--brandmarquee-gap);
+  padding-right: var(--brandmarquee-gap);
+}
+
+/* Room to breathe once the logos step up to their larger sizes. */
+@media (min-width: 640px) {
+  [data-site] .brandmarquee {
+    --brandmarquee-gap: 4rem;
+    --brandmarquee-fade: 4.5rem;
+    --brandmarquee-duration: 60s;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-site] .brandmarquee {
+    --brandmarquee-gap: 5.5rem;
+    --brandmarquee-fade: 6rem;
+    --brandmarquee-duration: 72s;
+  }
 }
 
 @keyframes brandmarquee {
@@ -287,9 +313,16 @@ body {
   }
 }
 
+/* Hovering does not stop the row — the drift is meant to be continuous. Focus is
+   the exception: a link that wanders off screen while it holds the focus ring is
+   unreachable, so keyboard use holds it still. */
+[data-site] .brandmarquee:focus-within .brandmarquee-track {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  /* No drift: hand the row back as something the visitor scrolls themselves,
-     otherwise the logos past the edge would be unreachable. */
+  /* No drift. The duplicate copy exists only to hide the loop's seam, so it goes
+     as well — otherwise every brand would appear twice in a row that stands still. */
   [data-site] .brandmarquee {
     overflow-x: auto;
     -webkit-mask-image: none;
@@ -298,5 +331,32 @@ body {
 
   [data-site] .brandmarquee-track {
     animation: none;
+  }
+
+  [data-site] .brandmarquee-row[aria-hidden='true'] {
+    display: none;
+  }
+
+  /* Wide enough for the whole list to wrap into a centred block, which beats
+     handing the visitor a sideways scrollbar. */
+  @media (min-width: 640px) {
+    [data-site] .brandmarquee {
+      overflow-x: visible;
+    }
+
+    [data-site] .brandmarquee-track {
+      width: 100%;
+    }
+
+    [data-site] .brandmarquee-row {
+      /* The row is sized to the whole list while it drifts and must not shrink;
+         here it has to give way to the container before it can wrap at all. */
+      width: 100%;
+      flex-shrink: 1;
+      flex-wrap: wrap;
+      justify-content: center;
+      row-gap: 2.5rem;
+      padding-right: 0;
+    }
   }
 }
